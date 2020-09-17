@@ -4,7 +4,7 @@ class Operaciones
   #precondición de dividir
   pre { divisor != 0 }
   #postcondición de dividir
-  post { result * divisor == dividendo } # fixme ? sintaxis modificada
+  post { |result| result * divisor == dividendo }
   def dividir(dividendo, divisor)
     dividendo / divisor
   end
@@ -15,5 +15,5 @@ class Operaciones
 
 end
 
-# puts Operaciones.new.dividir(4, 2)
-# puts Operaciones.new.dividir(4, 0)
+puts Operaciones.new.dividir(4, 3.0)
+puts Operaciones.new.dividir(4, 2)

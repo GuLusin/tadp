@@ -21,19 +21,14 @@ def post(&post_block)
 end
 
 
-def crear_contexto_ejecucion(parametros_metodo, metodo, valor_retorno = nil)
-  context = Class.new
+def crear_contexto_ejecucion(parametros_metodo, metodo)
+
+  context = clone
 
   parametros_metodo.zip(metodo.parameters).each do |retorno, valor_parametro|
     # puts "nombre_parametro #{valor_parametro[1]} retorna #{retorno}"
     context.define_singleton_method valor_parametro[1] do
       retorno
-    end
-  end
-
-  if valor_retorno
-    context.define_singleton_method :result do
-      valor_retorno
     end
   end
 
@@ -53,7 +48,7 @@ def before_and_after_each_call
                end
 
   define_singleton_method :method_added do |metodo_nuevo|
-    unless @metodos_redefinidos.include? metodo_nuevo
+    if @metodos_redefinidos and !@metodos_redefinidos.include? metodo_nuevo
       sym_aux_metodos = "#{metodo_nuevo}_aux".to_sym
 
       @metodos_redefinidos.append metodo_nuevo
@@ -70,20 +65,15 @@ def before_and_after_each_call
           raise "Failed to meet preconditions" unless context_pre.instance_eval(&pre_cond) # se podria hacer instance_exec antes
         end
 
-        # problema de evaluar en un conexto especifico:
-        # en el proc enviado solo puede usar parametros de la funcion donde se lo invoca
-        # y no de otros metodos
-        # agregar todos los otros metodos al contexto o hacerlo lazy? si falla en el contexto probar en la clase -> si falla en la clase mezclar clase con contexto
-
         valor_de_retorno = send(sym_aux_metodos, *argumentos)
 
         if post_cond #TODO codigo repetido pre_cond
-          context_post = crear_contexto_ejecucion(argumentos, method(sym_aux_metodos),valor_de_retorno)
-          raise "Failed to meet postconditions" unless context_post.instance_eval(&post_cond)
+          context_post = crear_contexto_ejecucion(argumentos, method(sym_aux_metodos))
+          raise "Failed to meet postconditions" unless context_post.instance_exec valor_de_retorno, &post_cond
         end
 
         invariants.each do |invariant|
-          raise "Exception invariant estado invalido" unless instance_exec(&invariant) #method(sym_aux_metodos).owner
+          raise "Exception invariant estado invalido" unless instance_exec(&invariant)
         end
 
         valor_de_retorno
