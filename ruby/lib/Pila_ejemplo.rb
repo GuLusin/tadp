@@ -57,17 +57,8 @@ puts "Alto pila: #{pila.height}   top: #{pila.top}"
 pila.push"hola"
 puts "Alto pila: #{pila.height}   top: #{pila.top}"
 
-loop do
-  pila.push "elemento agregado por el while"
-  puts "Alto pila: #{pila.height}   top: #{pila.top}"
-end
 
-
-# pila.push 2
-# pila.push 3
-# pila.push 4
-#
-# pila.top
-
-# pila.push 5
-# pila.push 6
+# loop do
+#   pila.push "elemento agregado por el while"
+#   puts "Alto pila: #{pila.height}   top: #{pila.top}"
+# end

@@ -4,19 +4,17 @@ class Guerrero
 
   attr_accessor :vida, :fuerza
 
-  invariant { 1 == 1 }
+  invariant { vida >= 0 } #fixme solo se chequea si se cumple para los metodos definidos DESPUES de llamar a inviartiant{}
+  invariant { fuerza > 0 && fuerza < 100 }
 
 
   def atacar(otro)
     otro.vida -= fuerza
   end
 
-  def set_vida(num)
-    vida = num
-  end
-
 end
 
+
 g = Guerrero.new
-g.set_vida(45)
+g.vida = -8
 
