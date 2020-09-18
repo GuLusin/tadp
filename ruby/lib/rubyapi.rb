@@ -1,28 +1,18 @@
 def invariant(&invariant_block)
+  instance_variables.include?(:@invariants) ? @invariants.append(invariant_block) : @invariants = [invariant_block]
 
-  #TODO el if de abajo se deberia poder reemplazar por esto, pero falla
-  #instance_variables.include? :@invariants ? @invariants.append invariant_block : @invariants = [invariant_block]
-
-  if instance_variables.include? :@invariants
-    @invariants.append invariant_block
-  else
-    @invariants = [invariant_block]
-  end
-
-  before_and_after_each_call
+  method_redefinition
 end
-
 
 def pre(&pre_bloc)
   @pre_condition = pre_bloc
-  before_and_after_each_call
+  method_redefinition
 end
 
 def post(&post_block)
   @post_condition = post_block
-  before_and_after_each_call
+  method_redefinition
 end
-
 
 def crear_contexto_ejecucion(parametros_metodo, metodo)
 
@@ -30,18 +20,23 @@ def crear_contexto_ejecucion(parametros_metodo, metodo)
 
   parametros_metodo.zip(metodo.parameters).each do |retorno, valor_parametro|
     # puts "nombre_parametro #{valor_parametro[1]} retorna #{retorno}"
-    context.define_singleton_method valor_parametro[1] do
-      retorno
-    end
+    context.define_singleton_method(valor_parametro[1]){retorno}
   end
 
   context
 end
 
-# fixme cambiar nombre por una mejor abstraccion
-def before_and_after_each_call
+def evaluarCondicion(condicion,metodo,argumentos,mensajeFallo,valor_retorno=nil)
+  if condicion
+    context = crear_contexto_ejecucion(argumentos, method(metodo))
+    raise mensajeFallo unless context.instance_exec(valor_retorno,&condicion)
+  end
+end
+
+def method_redefinition
 
   @metodos_redefinidos = []
+  invariants = @invariants #FIXME no anda con el @invariants :(
 
   define_singleton_method :method_added do |metodo_nuevo|
     if @metodos_redefinidos and !@metodos_redefinidos.include? metodo_nuevo
@@ -49,35 +44,25 @@ def before_and_after_each_call
 
       @metodos_redefinidos.append metodo_nuevo
       @metodos_redefinidos.append sym_aux_metodos
-      alias_method(sym_aux_metodos, metodo_nuevo) #todo se podria borrar el metodo auxiliar para mantener limpio el objeto
+      alias_method(sym_aux_metodos, metodo_nuevo) #TODO se podria borrar el metodo auxiliar para mantener limpio el objeto
 
       pre_cond = instance_variable_get :@pre_condition if instance_variables.include? :@pre_condition
       post_cond = instance_variable_get :@post_condition if instance_variables.include? :@post_condition
 
+      #puts pre_cond.inspect
+
       define_method metodo_nuevo do |*argumentos|
 
-        if pre_cond #TODO codigo repetido
-          context_pre = crear_contexto_ejecucion(argumentos, method(sym_aux_metodos))
-          raise 'Failed to meet preconditions' unless context_pre.instance_eval(&pre_cond)
-        end
+        evaluarCondicion(pre_cond, sym_aux_metodos, argumentos,'Failed to meet preconditions')
 
         valor_de_retorno = send(sym_aux_metodos, *argumentos)
 
-        if post_cond #TODO codigo repetido
-          context_post = crear_contexto_ejecucion(argumentos, method(sym_aux_metodos))
-          raise 'Failed to meet postconditions' unless context_post.instance_exec valor_de_retorno, &post_cond
-        end
+        evaluarCondicion(post_cond,sym_aux_metodos,argumentos,'Failed to meet postconditions',valor_de_retorno)
 
-        @invariants&.each do |invariant|
+        #FIXME no anda con el @invariants :(
+        invariants&.each do |invariant|
           raise 'Exception invariant estado invalido' unless instance_exec(&invariant)
         end
-
-        # Esto es lo mismo que lo de arriba
-        # if @invariants
-        #   @invariants.each do |invariant|
-        #     raise "Exception invariant estado invalido" unless instance_exec(&invariant)
-        #   end
-        # end
 
         valor_de_retorno
 
