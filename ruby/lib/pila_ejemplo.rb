@@ -57,6 +57,7 @@ puts "Alto pila: #{pila.height}   top: #{pila.top}"
 pila.push"hola"
 puts "Alto pila: #{pila.height}   top: #{pila.top}"
 
+puts method(:pre).owner
 
 loop do
   pila.push "elemento agregado por el while"
