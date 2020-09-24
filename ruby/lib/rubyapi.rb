@@ -1,10 +1,8 @@
 # FIXME: esta todo definido para Object, habria que probar definirlo en Module
 
 def invariant(&invariant_block)
-  instance_variables.include?(:@invariants) ? @invariants.append(invariant_block) : @invariants = [invariant_block]
-  # TODO: probar esto
-  # @invariants ||= []
-  # @invariants.append invariant_block
+  @invariants ||= []
+  @invariants.append invariant_block
 
   method_redefinition
 end
@@ -23,12 +21,17 @@ private
 def crear_contexto_ejecucion(parametros_metodo, metodo)
   context = clone
   parametros_metodo.zip(metodo.parameters).each do |retorno, valor_parametro|
-    # puts "nombre_parametro #{valor_parametro[1]} retorna #{retorno}"
     context.define_singleton_method(valor_parametro[1]) { retorno }
   end
 
   context
 end
+
+private
+def get_invariants
+  @invariants ||= []
+end
+
 
 private
 def evaluar_condicion(condicion, metodo, argumentos, mensaje_fallo, valor_retorno = nil)
@@ -41,7 +44,7 @@ end
 private
 def method_redefinition
   @metodos_redefinidos = []
-  invariants = @invariants # FIXME: no anda con el @invariants :(
+  local_invariats = get_invariants
 
   define_singleton_method :method_added do |metodo_nuevo|
     if @metodos_redefinidos && !@metodos_redefinidos.include?(metodo_nuevo)
@@ -65,7 +68,8 @@ def method_redefinition
         evaluar_condicion(post_cond, sym_aux_metodos, argumentos, 'Failed to meet postconditions', valor_de_retorno)
 
         # FIXME: no anda con el @invariants :(
-        invariants&.each do |invariant|
+        puts local_invariats
+        local_invariats.each do |invariant|
           raise 'Exception invariant estado invalido' unless instance_exec(&invariant)
         end
 
