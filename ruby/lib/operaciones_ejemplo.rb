@@ -9,7 +9,7 @@ class Operaciones
     dividendo / divisor
   end
   # este método no se ve afectado por ninguna pre/post condición
-  post {|result| result != 5}
+  post { |result| result != 5 }
   def restar(minuendo, sustraendo)
     minuendo - sustraendo
   end
