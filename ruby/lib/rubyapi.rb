@@ -44,7 +44,6 @@ def evaluar_condicion(condicion, metodo, argumentos, mensaje_fallo, valor_retorn
   end
 end
 
-
 def before_and_after_each_call(prebloc, postbloc, local_invariats: nil)
   @metodos_redefinidos = []
   define_singleton_method :method_added do |metodo_nuevo|

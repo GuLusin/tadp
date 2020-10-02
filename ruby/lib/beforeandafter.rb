@@ -4,7 +4,7 @@ class MiClase
 
   before_and_after_each_call(
       # Bloque Before. Se ejecuta antes de cada mensaje
-      proc{ puts 'Entré a un mensaje' },
+    proc{ puts 'Entré a un mensaje' },
       # Bloque After. Se ejecuta después de cada mensaje
       proc{ puts 'Salí de un mensaje' }
   )
@@ -23,7 +23,7 @@ end
 
 miclase = MiClase.new
 miclase.mensaje_2
-# Retorna 3 e imprime:
+miclase.mensaje_1
 # Entré a un mensaje
 # mensaje_2
 # Salí de un mensaje
