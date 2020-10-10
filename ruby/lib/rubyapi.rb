@@ -1,4 +1,4 @@
-# FIXME: esta todo definido para Object, habria que probar definirlo en Module
+
 module Contracts
   def invariant(&invariant_block)
     @invariants ||= []
@@ -57,8 +57,6 @@ module Contracts
           pre_cond = instance_variable_get :@pre_condition if instance_variables.include? :@pre_condition
           post_cond = instance_variable_get :@post_condition if instance_variables.include? :@post_condition
         end
-
-        # puts self
 
         @metodos_redefinidos.append metodo_nuevo
         @metodos_redefinidos.append sym_aux_metodos

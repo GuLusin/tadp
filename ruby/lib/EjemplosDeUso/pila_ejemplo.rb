@@ -1,4 +1,4 @@
-require_relative './rubyapi'
+require_relative './/rubyapi'
 
 class Pila
 
