@@ -1,4 +1,4 @@
-describe Prueba do
+describe 'Prueba' do
   # let(:pila) { Pila.new 2 }
 
   describe 'Puedo agregar dos elementos a una pila de capacity = 2' do
@@ -27,7 +27,7 @@ describe Prueba do
   describe 'Postcondicion' do
     it '' do
       avion = Avion.new 500
-      expect {avion.volar("USA", 50,200)}.to raise_error 'Failed to meet postconditions'
+      expect {avion.volar("USA", 50,600)}.to raise_error 'Failed to meet postconditions'
 
     end
 

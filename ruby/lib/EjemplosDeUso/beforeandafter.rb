@@ -1,4 +1,4 @@
-require './rubyapi'
+require_relative '../rubyapi'
 
 class MiClase
 

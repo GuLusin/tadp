@@ -1,4 +1,4 @@
-require '../lib/rubyapi'
+require_relative '../rubyapi'
 
 class Guerrero
 

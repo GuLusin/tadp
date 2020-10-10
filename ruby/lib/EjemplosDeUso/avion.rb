@@ -1,4 +1,4 @@
-require_relative './/rubyapi'
+require_relative '../rubyapi'
 
 # crea un avion con una cierta cantidad de asientos y se le puede establecer
 # el ratio de combustible gastado por unidad de distancia.
@@ -17,7 +17,7 @@ class Avion
 
   invariant { combustible >=0 }
   invariant { pasajeros>=0 }
-  invariant {asientos_totales>=pasajeros}
+  invariant { asientos_totales>=pasajeros }
 
   def cargar_pasajeros(num_pasajeros)
     @pasajeros+=num_pasajeros
@@ -40,7 +40,7 @@ class Avion
 end
 
 
-#
+
 # avion = Avion.new(500)
 #
-# avion.volar("caca", 50,200,hay_comida: true)
+# avion.volar("caca", 50,300,hay_comida: true)
