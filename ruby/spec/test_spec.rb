@@ -27,7 +27,7 @@ describe 'Prueba' do
   describe 'Postcondicion' do
     it '' do
       avion = Avion.new 500
-      expect {avion.volar("USA", 50,600)}.to raise_error 'Failed to meet postconditions'
+      expect {avion.volar("USA", 50,200)}.to raise_error 'Failed to meet postconditions'
 
     end
 
