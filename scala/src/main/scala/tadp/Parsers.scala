@@ -37,16 +37,22 @@ trait Parser extends (String => Try[Object]) {
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
-  def satisfies(parser: Parser): Parser = (v1: String) =>
-    ???
+//  def satisfies(condicion: ???): Parser = (v1: String) =>
+//    ???
 
-  def opt(parser: Parser): Parser = (v1: String) =>
-    ???
+  def opt(): Parser = (v1: String) =>
+    this.apply(v1) match {
+      case Success(res) => Success(res)
+      case Failure(_) => Success(("",v1))
+    }
 
-  def *(parser: Parser): Parser = (v1: String) =>
-    ???
+//  def *(): Parser = (v1: String) =>
+//    this.apply(v1) match {
+////      case Success((parteParseada, parseSinParcear : String)) => this.*().apply(parseSinParcear)
+//      case Failure(_) => Success(v1)
+//    }
 
-  def +(parser: Parser): Parser = (v1: String) =>
+  def +(): Parser = (v1: String) =>
     ???
 
 }
