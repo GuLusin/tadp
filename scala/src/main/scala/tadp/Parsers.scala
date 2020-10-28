@@ -3,82 +3,85 @@ package tadp.parserCombinators
 import scala.util.{Failure, Success, Try}
 
 object ErrorDeParseo extends RuntimeException("No se pudo parsear")
-trait Parser extends (String => Try[Object]) {
-  def <|>(parser: Parser): Parser = (v1: String) =>
-    this.apply(v1) match {
-      case Success(strings) => Success(strings)
-      case Failure(_) => parser.apply(v1)
+trait Parser extends (String => Try[(Any, String)]) {
+  def <|>(parser: Parser): Parser = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
+      case Success(tuple) => Success(tuple)
+      case Failure(_) => parser.apply(stringRecibido)
     }
 
-  def <>(parser: Parser): Parser = (v1: String) =>
-    this.apply(v1) match {
-      case Success((s1, s2 : String)) =>
+  def <>(parser: Parser): Parser = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
+      case Success((parsedElement1, s2 : String)) =>
         parser.apply(s2) match {
-          case Success((l1,_)) => Success(s1, l1)
+          case Success((parsedElement2, strToParse : String)) => Success((parsedElement1, parsedElement2), strToParse)
           case Failure(_) => Failure(ErrorDeParseo)
         }
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
-  // fixme: ~> y <~ probablemente no interpreté bien que retornan
-  def ~>(parser: Parser): Parser = (v1: String) =>
-    this.apply(v1) match {
+  def ~>(parser: Parser): Parser = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
       case Success((_, s2 : String)) => parser.apply(s2)
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
-  def <~(parser: Parser): Parser = (v1: String) =>
-    this.apply(v1) match {
-      case Success((s1, s2 : String)) =>
-        if (parser.apply(s2).isSuccess)
-          Success((s1, s2))
-        else
-          Failure(ErrorDeParseo)
+  def <~(parser: Parser): Parser = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
+      case Success((parsedElement1, s2 : String)) =>
+        parser.apply(s2) match {
+          case Success((_, strToParse : String)) => Success(parsedElement1, strToParse)
+          case Failure(_) => Failure(ErrorDeParseo)
+        }
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
-//  def satisfies(condicion: ???): Parser = (v1: String) =>
+
+//  def satisfies(condicion: ???): Parser = (stringRecibido: String) =>
 //    ???
 
-  def opt(): Parser = (v1: String) =>
-    this.apply(v1) match {
+  //  fixme:
+  //  val talVezIn = string("in").opt
+  //  val precedencia = talVezIn <> string("fija")
+  //  precedencia("infija")  --->  Success(((null,fija),))
+  //  esta bien?
+
+  def opt(): Parser = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
       case Success(res) => Success(res)
-      case Failure(_) => Success(("",v1))
+      case Failure(_) => Success((null, stringRecibido))
     }
 
-//  def *(): Parser = (v1: String) =>
-//    this.apply(v1) match {
-////      case Success((parteParseada, parseSinParcear : String)) => this.*().apply(parseSinParcear)
-//      case Failure(_) => Success(v1)
-//    }
+  def *(): Parser = (stringRecibido: String) =>
+    ???
 
-  def +(): Parser = (v1: String) =>
+  def +(): Parser = (stringRecibido: String) =>
     ???
 
 }
 
 object anyChar extends Parser{
-  override def apply(v1: String): Try[(String, String)] = Try(v1.charAt(0).toString, v1.substring(1))
+  override def apply(stringRecibido: String): Try[(Char, String)] = Try(stringRecibido.charAt(0), stringRecibido.substring(1))
 }
 
 case class char(_char : Char) extends Parser {
-  override def apply(v1: String): Try[(String, String)] = if (v1.startsWith(_char.toString)){
-    Success(_char.toString, v1.substring(1))
+  override def apply(stringRecibido: String): Try[(Char, String)] = if (stringRecibido.startsWith(_char.toString)){
+    Success((_char, stringRecibido.substring(1)))
   }
   else
     Failure(ErrorDeParseo)
 }
 
 object digit extends Parser{
-  override def apply(v1: String): Try[(String, String)] = if (v1.charAt(0).isDigit)
-    Success(v1.charAt(0).toString, v1.substring(1))
+  override def apply(stringRecibido: String): Try[(Char, String)] = if (stringRecibido.charAt(0).isDigit)
+    Success(stringRecibido.charAt(0), stringRecibido.substring(1))
   else
     Failure(ErrorDeParseo)
 }
 
 case class string(s1: String) extends Parser {
-  override def apply(v1: String): Try[(String, String)] = if (v1.startsWith(s1))
-    Success(s1, v1.substring(s1.length))
+  override def apply(stringRecibido: String): Try[(String, String)] = if (stringRecibido.startsWith(s1))
+    Success(s1, stringRecibido.substring(s1.length))
   else
     Failure(ErrorDeParseo)
 }
