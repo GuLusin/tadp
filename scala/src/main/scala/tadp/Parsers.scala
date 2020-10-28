@@ -3,7 +3,7 @@ package tadp.parserCombinators
 import scala.util.{Failure, Success, Try}
 
 object ErrorDeParseo extends RuntimeException("No se pudo parsear")
-trait Parser extends (String => Try[(String, String)]) {
+trait Parser extends (String => Try[Object]) {
   def <|>(parser: Parser): Parser = (v1: String) =>
     this.apply(v1) match {
       case Success(strings) => Success(strings)
@@ -12,31 +12,43 @@ trait Parser extends (String => Try[(String, String)]) {
 
   def <>(parser: Parser): Parser = (v1: String) =>
     this.apply(v1) match {
-      case Success((s1, s2)) =>
-        if (parser.apply(s2).isSuccess)
-          Success((s1, parser.apply(s2).get._1))
-        else
-          Failure(ErrorDeParseo)
+      case Success((s1, s2 : String)) =>
+        parser.apply(s2) match {
+          case Success((l1,_)) => Success(s1, l1)
+          case Failure(_) => Failure(ErrorDeParseo)
+        }
       case Failure(_) => Failure(ErrorDeParseo)
     }
-
 
   // fixme: ~> y <~ probablemente no interpreté bien que retornan
   def ~>(parser: Parser): Parser = (v1: String) =>
     this.apply(v1) match {
-      case Success((_, s2)) => parser.apply(s2)
+      case Success((_, s2 : String)) => parser.apply(s2)
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
   def <~(parser: Parser): Parser = (v1: String) =>
     this.apply(v1) match {
-      case Success((s1, s2)) =>
+      case Success((s1, s2 : String)) =>
         if (parser.apply(s2).isSuccess)
           Success((s1, s2))
         else
           Failure(ErrorDeParseo)
       case Failure(_) => Failure(ErrorDeParseo)
     }
+
+  def satisfies(parser: Parser): Parser = (v1: String) =>
+    ???
+
+  def opt(parser: Parser): Parser = (v1: String) =>
+    ???
+
+  def *(parser: Parser): Parser = (v1: String) =>
+    ???
+
+  def +(parser: Parser): Parser = (v1: String) =>
+    ???
+
 }
 
 object anyChar extends Parser{
@@ -64,4 +76,3 @@ case class string(s1: String) extends Parser {
   else
     Failure(ErrorDeParseo)
 }
-
