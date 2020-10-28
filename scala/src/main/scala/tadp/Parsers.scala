@@ -4,6 +4,7 @@ import scala.util.{Failure, Success, Try}
 
 object ErrorDeParseo extends RuntimeException("No se pudo parsear")
 trait Parser extends (String => Try[(Any, String)]) {
+  
   def <|>(parser: Parser): Parser = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success(tuple) => Success(tuple)
@@ -36,11 +37,15 @@ trait Parser extends (String => Try[(Any, String)]) {
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
+  // FIXME:
+  // en vez de Any => Any: quisiera que vaya de TipoQueDevuelveEsteParserEnSuccess => Any
+  def satisfies(f : Any => Boolean): Parser = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
+      case Success((parsed, toParse)) => if(f(parsed)) Success((parsed, toParse)) else Failure(ErrorDeParseo)
+      case Failure(_) => Failure(ErrorDeParseo)
+    }
 
-//  def satisfies(condicion: ???): Parser = (stringRecibido: String) =>
-//    ???
-
-  //  fixme:
+  //  FIXME:
   //  val talVezIn = string("in").opt
   //  val precedencia = talVezIn <> string("fija")
   //  precedencia("infija")  --->  Success(((null,fija),))
@@ -49,15 +54,24 @@ trait Parser extends (String => Try[(Any, String)]) {
   def opt(): Parser = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success(res) => Success(res)
-      case Failure(_) => Success((null, stringRecibido))
+      case Failure(_) => Success((None, stringRecibido))
     }
 
+  // La clausura de Kleene se aplica a un parser, convirtiéndolo en otro que se puede aplicar todas las veces que sea posible o 0 veces.
+  // El resultado debería ser una lista que contiene todos los valores que hayan sido parseados (podría no haber ninguno).
   def *(): Parser = (stringRecibido: String) =>
     ???
 
   def +(): Parser = (stringRecibido: String) =>
     ???
 
+  // FIXME:
+  // en vez de Any => Any: quisiera que vaya de TipoQueDevuelveEsteParserEnSuccess => Any
+  def map(f : Any => Any): Parser = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
+      case Success((parsedElement, str : String)) => Success(f(parsedElement),str)
+      case Failure(_) => Failure(ErrorDeParseo)
+    }
 }
 
 object anyChar extends Parser{
