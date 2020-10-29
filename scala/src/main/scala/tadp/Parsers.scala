@@ -37,8 +37,7 @@ trait Parser[T] extends (String => Try[(T, String)]) {
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
-  // FIXME:
-  // en vez de Any => Any: quisiera que vaya de TipoQueDevuelveEsteParserEnSuccess => Any
+
   def satisfies(f : T => Boolean): Parser[T] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success((parsed, toParse)) => if(f(parsed)) Success((parsed, toParse)) else Failure(ErrorDeParseo)
@@ -46,58 +45,79 @@ trait Parser[T] extends (String => Try[(T, String)]) {
     }
 
   //  FIXME:
-  //  val talVezIn = string("in").opt
-  //  val precedencia = talVezIn <> string("fija")
-  //  precedencia("infija")  --->  Success(((null,fija),))
-  //  esta bien?
-
+  //   esta bien option[T]?
   def opt(): Parser[Option[T]] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success((parsed, toParse : String)) => Success(Some(parsed), toParse)
       case Failure(_) => Success(None, stringRecibido)
     }
 
-  // La clausura de Kleene se aplica a un parser, convirtiéndolo en otro que se puede aplicar todas las veces que sea posible o 0 veces.
-  // El resultado debería ser una lista que contiene todos los valores que hayan sido parseados (podría no haber ninguno).
-  def *(): Parser[T] = (stringRecibido: String) =>
-    ???
+//  La clausura de Kleene se aplica a un parser, convirtiéndolo en otro que se puede aplicar todas las veces que sea posible o 0 veces.
+//  El resultado debería ser una lista que contiene todos los valores que hayan sido parseados (podría no haber ninguno).
+//  TODO: anyChar.*() devuelve una lista de Char, estaria bueno que devuelva un String
+  def *(): Parser[List[T]] = (stringRecibido: String) =>
+    this.apply(stringRecibido) match {
+      case Success((parsed, toParse : String)) =>
+        val (listaSiguienteIteracion, strSiguienteIteracion) : (List[T], String) = this.*().apply(toParse).get
+        if (listaSiguienteIteracion.isEmpty) Success(List(parsed), toParse) else Success(parsed :: listaSiguienteIteracion , strSiguienteIteracion)
+      case Failure(_) => Success(List.empty[T], stringRecibido)
+    }
 
 
-  def +(): Parser[T] = (stringRecibido: String) =>
-    ???
+//  Es como la clausura de Kleene pero requiere que el parser se aplique al menos UNA vez.
+  def +(): Parser[List[T]] = (stringRecibido: String) =>
+      this.*().apply(stringRecibido) match {
+        case Success((List(),_)) => Failure(ErrorDeParseo)
+        case Success(res) => Success(res)
+      }
 
-  // FIXME:
-  // en vez de Any => Any: quisiera que vaya de TipoQueDevuelveEsteParserEnSuccess => Any
+// TODO: probablemente se pueda usar directamente la funcion map de Try
+//  y hacer algo del estilo:     this.apply(stringRecibido).map(f)
   def map[R](f : T => R): Parser[R] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
-        // probar con map posta
       case Success((parsedElement, str : String)) => Success(f(parsedElement),str)
       case Failure(_) => Failure(ErrorDeParseo)
     }
 }
 
+//  FIXME:
+//    En muchos lados hacemos:
+//    if condicion:
+//     Success(tuplaDeRetorno)
+//    else
+//     Failure(ErrorDeParseo)
+//
+//    podriamos usar una funcion privada tipo evaluar(condicion, tuplaDeRetorno)
+//    y evitar repeticion de codigo
+
 object anyChar extends Parser[Char]{
-  override def apply(stringRecibido: String): Try[(Char, String)] = Try(stringRecibido.head, stringRecibido.substring(1))
+  override def apply(stringRecibido: String): Try[(Char, String)] =
+    if (stringRecibido.length != 0)
+      Success(stringRecibido.head, stringRecibido.substring(1))
+    else
+      Failure(ErrorDeParseo)
 }
 
 case class char(_char : Char) extends Parser[Char] {
-  override def apply(stringRecibido: String): Try[(Char, String)] = if (stringRecibido.head == _char){
-    Success((_char, stringRecibido.substring(1)))
-  }
-  else
-    Failure(ErrorDeParseo)
+  override def apply(stringRecibido: String): Try[(Char, String)] =
+    if (stringRecibido.length != 0 && stringRecibido.head == _char)
+      Try((_char, stringRecibido.substring(1)))
+    else
+      Failure(ErrorDeParseo)
 }
 
 object digit extends Parser[Char]{
-  override def apply(stringRecibido: String): Try[(Char, String)] = if (stringRecibido.head.isDigit)
-    Success(stringRecibido.charAt(0), stringRecibido.substring(1))
-  else
-    Failure(ErrorDeParseo)
+  override def apply(stringRecibido: String): Try[(Char, String)] =
+    if (stringRecibido.length != 0 && stringRecibido.head.isDigit)
+      Success(stringRecibido.charAt(0), stringRecibido.substring(1))
+    else
+      Failure(ErrorDeParseo)
 }
 
 case class string(s1: String) extends Parser[String] {
-  override def apply(stringRecibido: String): Try[(String, String)] = if (stringRecibido.startsWith(s1))
-    Success(s1, stringRecibido.substring(s1.length))
-  else
-    Failure(ErrorDeParseo)
+  override def apply(stringRecibido: String): Try[(String, String)] =
+    if (stringRecibido.length != 0 && stringRecibido.startsWith(s1))
+      Success(s1, stringRecibido.substring(s1.length))
+    else
+      Failure(ErrorDeParseo)
 }
