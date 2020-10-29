@@ -2,6 +2,9 @@ package tadp.parserCombinators
 
 import scala.util.{Failure, Success, Try}
 
+// TODO: 
+//  case Failure(_) => parser.apply(stringRecibido) está por todooos lados
+
 object ErrorDeParseo extends RuntimeException("No se pudo parsear")
 trait Parser[T] extends (String => Try[(T, String)]) {
 
@@ -44,8 +47,8 @@ trait Parser[T] extends (String => Try[(T, String)]) {
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
-  //  FIXME:
-  //   esta bien option[T]?
+//  FIXME:
+//   esta bien option[T]?
   def opt(): Parser[Option[T]] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success((parsed, toParse : String)) => Success(Some(parsed), toParse)
@@ -54,7 +57,7 @@ trait Parser[T] extends (String => Try[(T, String)]) {
 
 //  La clausura de Kleene se aplica a un parser, convirtiéndolo en otro que se puede aplicar todas las veces que sea posible o 0 veces.
 //  El resultado debería ser una lista que contiene todos los valores que hayan sido parseados (podría no haber ninguno).
-//  TODO: anyChar.*() devuelve una lista de Char, estaria bueno que devuelva un String
+//  FIXME: anyChar.*() devuelve una lista de Char, estaria bueno que devuelva un String
   def *(): Parser[List[T]] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success((parsed, toParse : String)) =>
@@ -80,9 +83,9 @@ trait Parser[T] extends (String => Try[(T, String)]) {
     }
 }
 
-//  FIXME:
+//  TODO:
 //    En muchos lados hacemos:
-//    if condicion:
+//    if condicion(strAEvaluar):
 //     Success(tuplaDeRetorno)
 //    else
 //     Failure(ErrorDeParseo)
@@ -100,9 +103,10 @@ object anyChar extends Parser[Char]{
 
 case class char(_char : Char) extends Parser[Char] {
   override def apply(stringRecibido: String): Try[(Char, String)] =
-    if (stringRecibido.length != 0 && stringRecibido.head == _char)
+    if (stringRecibido.length != 0 && stringRecibido.head == _char) {
+      // FIXME: no usar try, devolver Failure o Success
       Try((_char, stringRecibido.substring(1)))
-    else
+    } else
       Failure(ErrorDeParseo)
 }
 
