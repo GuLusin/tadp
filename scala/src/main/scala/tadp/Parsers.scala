@@ -1,5 +1,6 @@
 package tadp.parserCombinators
 
+import scala.::
 import scala.util.{Failure, Success, Try}
 
 // TODO: 
@@ -16,9 +17,9 @@ trait Parser[T] extends (String => Try[(T, String)]) {
 
   def <>[R](parser: Parser[R]): Parser[(T, R)] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
-      case Success((parsedElement1, s2 : String)) =>
+      case Success((parsedElement1, s2: String)) =>
         parser.apply(s2) match {
-          case Success((parsedElement2, strToParse : String)) => Success((parsedElement1, parsedElement2), strToParse)
+          case Success((parsedElement2, strToParse: String)) => Success((parsedElement1, parsedElement2), strToParse)
           case Failure(_) => Failure(ErrorDeParseo)
         }
       case Failure(_) => Failure(ErrorDeParseo)
@@ -26,20 +27,25 @@ trait Parser[T] extends (String => Try[(T, String)]) {
 
   def ~>[R](parser: Parser[R]): Parser[R] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
-      case Success((_, s2 : String)) => parser.apply(s2)
+      case Success((_, s2: String)) => parser.apply(s2)
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
   def <~[R](parser: Parser[R]): Parser[T] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
-      case Success((parsedElement1, s2 : String)) =>
+      case Success((parsedElement1, s2: String)) =>
         parser.apply(s2) match {
-          case Success((_, strToParse : String)) => Success(parsedElement1, strToParse)
+          case Success((_, strToParse: String)) => Success(parsedElement1, strToParse)
           case Failure(_) => Failure(ErrorDeParseo)
         }
       case Failure(_) => Failure(ErrorDeParseo)
     }
 
+  def sepBy[R](separatorParser: Parser[R]): Parser[List[T]] = (stringRecibido: String) =>
+    this.<>((separatorParser.~>(this)).*())(stringRecibido) match {
+      case Success(((primerParsed,listaParsed),toParse)) => Success(( primerParsed :: listaParsed,toParse))
+      case Failure(_) => Failure(ErrorDeParseo)
+    }
 
   def satisfies(f : T => Boolean): Parser[T] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
@@ -48,7 +54,7 @@ trait Parser[T] extends (String => Try[(T, String)]) {
     }
 
 //  FIXME:
-//   esta bien option[T]?
+//   esta bien option[T]? SI, MESSIRVE
   def opt(): Parser[Option[T]] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success((parsed, toParse : String)) => Success(Some(parsed), toParse)
@@ -74,8 +80,6 @@ trait Parser[T] extends (String => Try[(T, String)]) {
         case Success(res) => Success(res)
       }
 
-// TODO: probablemente se pueda usar directamente la funcion map de Try
-//  y hacer algo del estilo:     this.apply(stringRecibido).map(f)
   def map[R](f : T => R): Parser[R] = (stringRecibido: String) =>
     this.apply(stringRecibido) match {
       case Success((parsedElement, str : String)) => Success(f(parsedElement),str)
@@ -104,8 +108,7 @@ object anyChar extends Parser[Char]{
 case class char(_char : Char) extends Parser[Char] {
   override def apply(stringRecibido: String): Try[(Char, String)] =
     if (stringRecibido.length != 0 && stringRecibido.head == _char) {
-      // FIXME: no usar try, devolver Failure o Success
-      Try((_char, stringRecibido.substring(1)))
+      Success((_char, stringRecibido.substring(1)))
     } else
       Failure(ErrorDeParseo)
 }
@@ -125,3 +128,44 @@ case class string(s1: String) extends Parser[String] {
     else
       Failure(ErrorDeParseo)
 }
+
+object integer extends Parser[Int] {
+  override def apply(stringRecibido: String): Try[(Int, String)] = {
+    val parserAuxiliar: Parser[(Option[Char], List[Char])] = char('-').opt() <> digit.+
+    parserAuxiliar(stringRecibido) match {
+      case Success(((_: Some[Char], charlist: List[Char]), str: String)) => Success((-charlist.mkString.toInt, str))
+      case Success(((None, charlist: List[Char]), str: String)) => Success((charlist.mkString.toInt, str))
+      case Failure(_) => Failure(ErrorDeParseo)
+    }
+  }
+}
+
+object double extends Parser[Double] {
+
+  private def unirDouble(menos: Option[Char], pDigits: List[Char], punto: Option[Char], sDigits: Option[List[Char]]): Double = {
+    ( (menos.getOrElse("") :: pDigits) ++ (punto.getOrElse("") :: sDigits.getOrElse(List.empty))).mkString.toDouble
+  }
+  // evaluar sin primeros y solo .algo
+  // evaluar no se fijate
+
+
+  override def apply(stringRecibido: String): Try[(Double, String)] = {
+    char('-').opt().<>(digit.*()).<>((char('.').opt())).<>((digit.*()).opt())(stringRecibido) match {
+      case Success(((((menos, pDigits), punto), sDigits), toParse)) => Success((unirDouble(menos, pDigits, punto, sDigits), toParse))
+      case Failure(_) => Failure(ErrorDeParseo)
+    }
+  }
+}
+
+//object letter extends Parser[Char] {
+//  override def apply(stringRecibido: String): Try[(Char, String)] = {
+//    anyChar(stringRecibido) match {
+//     // case Success((_char: Char, toParse: String) && _char.is)
+//    }
+//  }
+//}
+
+
+//---------------------------------------------------------------------
+
+
