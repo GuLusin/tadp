@@ -1,2 +1,5 @@
-rectangulo[186@ 840, 400@150]
-triangulo[0 @8, 7@8, 8 @ 128]
+grupo(
+    grupo(
+        rectangulo[0@0,10@10]
+    )
+)
