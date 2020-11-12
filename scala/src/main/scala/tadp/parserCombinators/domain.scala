@@ -1,37 +1,63 @@
 package tadp.parserCombinators
 
+import tadp.internal.TADPDrawingAdapter
+
 import scala.io.Source
 
-trait Elemento
+trait Elemento{
+  def agregarAdapter(adapter : TADPDrawingAdapter): TADPDrawingAdapter
+}
 
-case class Punto(x : Double, y : Double) extends Elemento
+case class Punto(x : Double, y : Double){
+  def getTuple: (Double, Double) = (x, y)
+}
 
-case class Triangulo(p1 : Punto, p2 : Punto, p3 : Punto) extends Elemento
+case class Triangulo(p1 : Punto, p2 : Punto, p3 : Punto) extends Elemento {
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = adapter.triangle(p1.getTuple, p2.getTuple, p3.getTuple)
+}
 
-case class Rectangulo(supIzq : Punto, infDer : Punto) extends Elemento
+case class Rectangulo(supIzq : Punto, infDer : Punto) extends Elemento {
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = adapter.rectangle(supIzq.getTuple, infDer.getTuple)
+}
 
-case class Circulo(centro : Punto, radio : Double) extends Elemento
+case class Circulo(centro : Punto, radio : Double) extends Elemento {
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = adapter.circle(centro.getTuple, radio)
+}
 
-case class Grupo(elementos : List[Elemento]) extends Elemento
+case class Grupo(elementos : List[Elemento]) extends Elemento {
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = elementos.foldRight(adapter)(_.agregarAdapter(adapter))
+}
 
-case class TokenFinGrupo() extends Elemento
 
 //case aca rompe
-class Transformador(aplicaSobre : Elemento) extends Elemento
+abstract class Transformador(aplicaSobre : Elemento) extends Elemento {
+}
 
 case class color(rojo : Int, verde : Int, azul : Int, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre){
   require( 0 <= rojo  && rojo  <= 255 , "Codigo de color debe estar entre 0 y 255" )
   require( 0 <= verde && verde <= 255 , "Codigo de color debe estar entre 0 y 255" )
   require( 0 <= azul  && azul  <= 255 , "Codigo de color debe estar entre 0 y 255" )
+
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = ???
+
 }
 
-case class Escala(factorX : Double, factorY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre)
+case class Escala(factorX : Double, factorY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre){
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = ???
+
+}
 
 //El ángulo debería estar entre 0 y 359 inclusive.
 //Si en la descripción dada el ángulo es mayor, queremos limitarlo a esos valores usando un ángulo equivalente.
-case class Rotacion(angulo : Int, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre)
+case class Rotacion(angulo : Int, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre){
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = ???
 
-case class Translacion(desX : Double, desY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre)
+}
+
+case class Translacion(desX : Double, desY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre){
+  override def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = ???
+
+}
 
 
 object polenta extends App{
