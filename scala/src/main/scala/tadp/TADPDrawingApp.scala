@@ -2,8 +2,10 @@ package tadp
 
 import scalafx.scene.paint.Color
 import tadp.internal.TADPDrawingAdapter
+import tadp.parserCombinators.{Parser, char, double, integer, string}
 
 object TADPDrawingApp extends App {
+
 
 //   Ejemplo de uso del drawing adapter:
     TADPDrawingAdapter
@@ -14,3 +16,4 @@ object TADPDrawingApp extends App {
           .end()
       }
 }
+
