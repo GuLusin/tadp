@@ -1,0 +1,1 @@
+rectangulo[186@ 0, 400@150]triangulo[0 @8, 7@8, 8 @ 128]
