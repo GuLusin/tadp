@@ -29,6 +29,9 @@ case class Color(rojo : Int, verde : Int, azul : Int, _aplicaSobre : Elemento) e
   require( 0 <= rojo  && rojo  <= 255 , "Codigo de color debe estar entre 0 y 255" )
   require( 0 <= verde && verde <= 255 , "Codigo de color debe estar entre 0 y 255" )
   require( 0 <= azul  && azul  <= 255 , "Codigo de color debe estar entre 0 y 255" )
+
+  def isSameColor(color: Color): Boolean = rojo == color.rojo && verde == color.verde && azul == color.azul
+
 }
 
 case class Escala(factorX : Double, factorY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre)
@@ -36,6 +39,7 @@ case class Escala(factorX : Double, factorY : Double, _aplicaSobre : Elemento) e
 //El ángulo debería estar entre 0 y 359 inclusive.
 //Si en la descripción dada el ángulo es mayor, queremos limitarlo a esos valores usando un ángulo equivalente.
 case class Rotacion(angulo : Int, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre)
+// TODO: check angulo % 360
 
 case class Translacion(desX : Double, desY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre)
 
@@ -69,7 +73,7 @@ object polenta extends App{
   val rotParser : Parser[Rotacion] = (string("rotacion[") ~> integer <~ string("](") <> elemParser <~ char(')'))
     .map {case (angulo : Int, elemento: Elemento) => Rotacion(angulo % 360, elemento) }
 
-  val translacionParser : Parser[Translacion] = (string("translacion[") ~> double <~ coma <> double <~ string("](") <> elemParser <~ char(')'))
+  val translacionParser : Parser[Translacion] = (string("traslacion[") ~> double <~ coma <> double <~ string("](") <> elemParser <~ char(')'))
     .map {case ((x: Double, y: Double), elemento: Elemento) => Translacion(x, y, elemento) }
 
   def transformadorParser : Parser[Transformador] = colorParser <|> escalaParser <|> rotParser <|> translacionParser
@@ -83,7 +87,32 @@ object polenta extends App{
 
   val aux = elemParser(str)
 
-  println(aux)
+
+
+  def simplificar(elems : List[Elemento]) : List[Elemento] ={
+    elems match {
+      case Nil => Nil
+      case Rotacion(0, elemento) :: ls => simplificar(elemento :: ls)
+      case Rotacion(ang1, Rotacion(ang2, elemento)) :: ls =>
+        simplificar(Rotacion((ang1 + ang2)%360, elemento) :: ls)
+      case Grupo((color: Color) :: (resto : List[Color]) ) :: ls
+        if resto.forall(_.isSameColor(color)) =>
+          simplificar(color.copy(_aplicaSobre = Grupo(color._aplicaSobre :: resto.map(_._aplicaSobre))) :: ls)
+
+      case Escala(1, 1, elemento) :: ls => simplificar(elemento :: ls)
+      case Escala(x1, y1, Escala(x2, y2, elemento)) :: ls =>
+        simplificar(Escala(x1 * x2, y1 * y2, elemento) :: ls)
+
+      case Translacion(0, 0, elemento) :: ls => simplificar(elemento :: ls)
+      case Translacion(x1, y1, Translacion(x2, y2, elemento)) :: ls =>
+        simplificar(Translacion(x1 + x2, y1 + y2, elemento) :: ls)
+
+
+      case i :: is => i :: simplificar(is)
+    }
+
+
+  }
 
   if(aux.isSuccess){
     println("Sin simplificar:")
@@ -93,20 +122,11 @@ object polenta extends App{
     println(aux)
   }
 
-  @tailrec
-  def simplificador(elemento: Elemento) : Elemento = {
-    elemento match {
-      case figura: Figura => figura
-      case Grupo(elemento :: Nil) => simplificador(elemento)
-//      case Grupo(elementos : List[Elemento]) => Grupo(simplificador(elementos))
-      case a => a
-    }
-  }
 
 
   if(aux.isSuccess){
     println("Simplificado:")
-    println(simplificador(aux.get._1))
+    println(simplificar(List(aux.get._1)).head)
   }else{
     println("rompio todo, pa")
     println(aux)

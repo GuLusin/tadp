@@ -1,5 +1,5 @@
-grupo(
-    grupo(
-        rectangulo[0@0,10@10]
-    )
+rotacion[300](
+	rotacion[60](
+		rectangulo[100 @ 200, 300 @ 400]
+	)
 )
