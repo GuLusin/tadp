@@ -33,7 +33,23 @@ case class Grupo(elementos : List[Elemento]) extends Elemento {
 }
 
 abstract class Transformador(aplicaSobre : Elemento) extends Elemento{
+  def esMismoTipoTransformacion(resto : List[Transformador]) : Boolean = {
+    try
+      resto forall this.esMismoTipoTransformacion
+    catch { case _ => false }
+  }
+
+  def esMismoTipoTransformacion(otraTransformacion : Transformador) : Boolean =
+    otraTransformacion.getClass == getClass && otraTransformacion.parametros == parametros()
+
+  def parametros() : Any
+
+  def seAplicaSobre(): Elemento = aplicaSobre
+
   def wrapTransoformacion(adapterModificado: TADPDrawingAdapter): TADPDrawingAdapter = aplicaSobre.agregarAdapter(adapterModificado).end()
+
+  def getIgual(ahoraAplicaSobre : Elemento) : Transformador
+
 }
 
 
@@ -46,11 +62,20 @@ case class Colour(rojo : Int, verde : Int, azul : Int, _aplicaSobre : Elemento) 
 
   def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = wrapTransoformacion(adapter.beginColor(Color.rgb(rojo, verde, azul)))
 
+  override def parametros() = (rojo, verde, azul)
+
+  override def getIgual(ahoraAplicaSobre : Elemento) : Transformador
+  = this.copy(_aplicaSobre = ahoraAplicaSobre)
+
 }
 
 case class Escala(factorX : Double, factorY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre){
   def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = wrapTransoformacion(adapter.beginScale(factorX, factorY))
 
+  override def parametros() = (factorX, factorY)
+
+  override def getIgual(ahoraAplicaSobre : Elemento) : Transformador
+  = this.copy(_aplicaSobre = ahoraAplicaSobre)
 }
 
 //El ángulo debería estar entre 0 y 359 inclusive.
@@ -58,10 +83,21 @@ case class Escala(factorX : Double, factorY : Double, _aplicaSobre : Elemento) e
 case class Rotacion(angulo : Int, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre){
   def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = wrapTransoformacion(adapter.beginRotate(angulo))
 
+  override def parametros() = angulo
+
+  override def getIgual(ahoraAplicaSobre : Elemento) : Transformador
+  = this.copy(_aplicaSobre = ahoraAplicaSobre)
+
 }
 
 case class Translacion(desX : Double, desY : Double, _aplicaSobre : Elemento) extends Transformador(_aplicaSobre){
   def agregarAdapter(adapter: TADPDrawingAdapter): TADPDrawingAdapter = wrapTransoformacion(adapter.beginTranslate(desX, desY))
+
+  override def parametros() = (desX, desY)
+
+  override def getIgual(ahoraAplicaSobre : Elemento) : Transformador
+  = this.copy(_aplicaSobre = ahoraAplicaSobre)
+
 
 }
 
@@ -119,14 +155,14 @@ case class Polenta() extends (String => Elemento) {
       case Rotacion(ang1, Rotacion(ang2, elemento)) :: ls =>
         simplificar(Rotacion((ang1 + ang2) % 360, elemento) :: ls)
 
-      case Grupo((color: Colour) :: (resto : List[Colour]) ) :: ls
-        if resto.forall(_.isSameColor(color)) =>
-        simplificar(color.copy(_aplicaSobre = Grupo(color._aplicaSobre :: resto.map(_._aplicaSobre))) :: ls)
+//      case Grupo((color: Colour) :: (resto : List[Colour]) ) :: ls
+//        if resto.forall(_.isSameColor(color)) =>
+//          simplificar(color.copy(_aplicaSobre = Grupo(color._aplicaSobre :: resto.map(_._aplicaSobre))) :: ls)
 
-      // Esto esta mal!
-//      case Grupo((head : [T :< Transformador]) :: (resto : List[T])) :: ls
-//        if todosAplicanLoMismo =>
-//          simplificar(head.copy(_aplicaSobre = Grupo(head._aplicaSobre :: resto.map(_._aplicaSobre))) :: ls)
+
+      case Grupo((primer : Transformador) :: (resto : List[Transformador])) :: ls
+        if primer.esMismoTipoTransformacion(resto) =>
+          simplificar(primer.getIgual( Grupo(primer.seAplicaSobre() :: resto.map(_.seAplicaSobre()))) :: ls)
 
 
       case Colour(_, _, _, colour: Colour) :: ls => simplificar(colour :: ls)
