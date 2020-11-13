@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 object ErrorDeParseo extends RuntimeException("No se pudo parsear")
 trait Parser[+T] extends (String => Try[(T, String)]) {
 
-  def <|>[T1 >: T](otroParser: Parser[T1]): Parser[T1] = (stringRecibido: String) =>
+  def <|>[T1 >: T](otroParser: => Parser[T1]): Parser[T1] = (stringRecibido: String) =>
     this(stringRecibido) recoverWith { case ErrorDeParseo => otroParser(stringRecibido) }
 
 
